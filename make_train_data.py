@@ -90,4 +90,3 @@ def precision_score(acc_score, test_score) :
     false_zero = np.sum((acc_score != 0) * (test_score == 0))
     precision_zero = true_zero / (true_zero + false_zero)
     print("Precision for the label '0' :", precision_zero)
-
