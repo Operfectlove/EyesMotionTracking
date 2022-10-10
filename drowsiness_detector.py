@@ -1,6 +1,3 @@
-# coding: utf-8
-
-# In[1]:
 import numpy as np
 import imutils
 import time
@@ -16,7 +13,7 @@ from threading import Timer
 from check_cam_fps import check_fps
 import make_train_data as mtd
 import light_remover as lr
-import ringing_alarm as alarm
+import datetime
 
 def eye_aspect_ratio(eye) :
     A = dist.euclidean(eye[1], eye[5])
@@ -29,9 +26,6 @@ def init_open_ear() :
     time.sleep(5)
     print("open init time sleep")
     ear_list = []
-    th_message1 = Thread(target = init_message)
-    th_message1.deamon = True
-    th_message1.start()
     for i in range(7) :
         ear_list.append(both_ear)
         time.sleep(1)
@@ -43,11 +37,7 @@ def init_close_ear() :
     time.sleep(2)
     th_open.join()
     time.sleep(5)
-    print("close init time sleep")
     ear_list = []
-    th_message2 = Thread(target = init_message)
-    th_message2.deamon = True
-    th_message2.start()
     time.sleep(1)
     for i in range(7) :
         ear_list.append(both_ear)
@@ -57,10 +47,6 @@ def init_close_ear() :
     EAR_THRESH = (((OPEN_EAR - CLOSE_EAR) / 2) + CLOSE_EAR) #EAR_THRESH means 50% of the being opened eyes state
     print("close list =", ear_list, "\nCLOSE_EAR =", CLOSE_EAR, "\n")
     print("The last EAR_THRESH's value :",EAR_THRESH, "\n")
-
-def init_message() :
-    print("init_message")
-    alarm.sound_alarm("init_sound.mp3")
 
 #####################################################################################################################
 #1. Variables for checking EAR.
@@ -107,7 +93,7 @@ prev_time = 0
 #7. 
 print("loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+predictor = dlib.shape_predictor("C:\sdkassignment\drowsiness-detection\shape_predictor_68_face_landmarks.dat")
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
@@ -124,7 +110,7 @@ th_open.start()
 th_close = Thread(target = init_close_ear)
 th_close.deamon = True
 th_close.start()
-
+before = datetime.datetime.now()
 #####################################################################################################################
 
 while True:
@@ -157,52 +143,18 @@ while True:
         cv2.drawContours(frame, [rightEyeHull], -1, (0,255,0), 1)
         
 
-        if both_ear < EAR_THRESH :
-            if not TIMER_FLAG:
-                start_closing = timeit.default_timer()
-                TIMER_FLAG = True
-            COUNTER += 1
+        if both_ear < 210 :
+            now = datetime.datetime.now()
+            dt= now - before
+            if dt.seconds >=3:
+                cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
 
-            if COUNTER >= EAR_CONSEC_FRAMES:
-
-                mid_closing = timeit.default_timer()
-                closing_time = round((mid_closing-start_closing),3)
-
-                if closing_time >= RUNNING_TIME:
-                    if RUNNING_TIME == 0 :
-                        CUR_TERM = timeit.default_timer()
-                        OPENED_EYES_TIME = round((CUR_TERM - PREV_TERM),3)
-                        PREV_TERM = CUR_TERM
-                        RUNNING_TIME = 1.75
-
-                    RUNNING_TIME += 2
-                    ALARM_FLAG = True
-                    ALARM_COUNT += 1
-
-                    print("{0}st ALARM".format(ALARM_COUNT))
-                    print("The time eyes is being opened before the alarm went off :", OPENED_EYES_TIME)
-                    print("closing time :", closing_time)
-                    test_data.append([OPENED_EYES_TIME, round(closing_time*10,3)])
-                    result = mtd.run([OPENED_EYES_TIME, closing_time*10], power, nomal, short)
-                    result_data.append(result)
-                    t = Thread(target = alarm.select_alarm, args = (result, ))
-                    t.deamon = True
-                    t.start()
-
-        else :
-            COUNTER = 0
-            TIMER_FLAG = False
-            RUNNING_TIME = 0
-
-            if ALARM_FLAG :
-                end_closing = timeit.default_timer()
-                closed_eyes_time.append(round((end_closing-start_closing),3))
-                print("The time eyes were being offed :", closed_eyes_time)
-
-            ALARM_FLAG = False
+        else:
+            before = datetime.datetime.now() 
+        
 
         cv2.putText(frame, "EAR : {:.2f}".format(both_ear), (300,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
-
+        
     cv2.imshow("Frame",frame)
     key = cv2.waitKey(1) & 0xFF
 

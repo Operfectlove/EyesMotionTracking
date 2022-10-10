@@ -16,7 +16,7 @@ def select_alarm(result) :
 
 def sound_alarm(path) :
     pygame.mixer.init()
-    pygame.mixer.music.load(path)
+    #pygame.mixer.music.load(path)
     pygame.mixer.music.play()
     
 
