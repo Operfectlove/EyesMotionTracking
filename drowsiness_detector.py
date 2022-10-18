@@ -14,6 +14,8 @@ from check_cam_fps import check_fps
 import make_train_data as mtd
 import light_remover as lr
 import datetime
+import tensorflow.keras
+
 
 def eye_aspect_ratio(eye) :
     A = dist.euclidean(eye[1], eye[5])
@@ -111,12 +113,47 @@ th_close = Thread(target = init_close_ear)
 th_close.deamon = True
 th_close.start()
 before = datetime.datetime.now()
+#########################################################################################
+model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
+
+# 케라스 모델 가져오기
+model = tensorflow.keras.models.load_model(model_filename)
+
+# 카메라를 제어할 수 있는 객체
+capture = cv2.VideoCapture(0)
+
+# 카메라 길이 너비 조절
+capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+
+# 이미지 처리하기
+def preprocessing(frame):
+    #frame_fliped = cv2.flip(frame, 1)
+    # 사이즈 조정 티쳐블 머신에서 사용한 이미지 사이즈로 변경해준다.
+    size = (224, 224)
+    frame_resized = cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
+    
+    # 이미지 정규화
+    # astype : 속성
+    frame_normalized = (frame_resized.astype(np.float32) / 127.0) - 1
+
+    # 이미지 차원 재조정 - 예측을 위해 reshape 해줍니다.
+    # keras 모델에 공급할 올바른 모양의 배열 생성
+    frame_reshaped = frame_normalized.reshape((1, 224, 224, 3))
+    #print(frame_reshaped)
+    return frame_reshaped
+
+# 예측용 함수
+def predict(frame):
+    prediction = model.predict(frame)
+    return prediction
 #####################################################################################################################
 
 while True:
     frame = vs.read()
     frame = imutils.resize(frame, width = 400)
-    
+    preprocessed = preprocessing(frame)
+    prediction = predict(preprocessed)
     L, gray = lr.light_removing(frame)
     
     rects = detector(gray,0)
@@ -124,42 +161,43 @@ while True:
     #checking fps. If you want to check fps, just uncomment below two lines.
     #prev_time, fps = check_fps(prev_time)
     #cv2.putText(frame, "fps : {:.2f}".format(fps), (10,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
+    if (prediction[0,0] < prediction[0,1]):
+        for rect in rects:
+            shape = predictor(gray, rect)
+            shape = face_utils.shape_to_np(shape)
 
-    for rect in rects:
-        shape = predictor(gray, rect)
-        shape = face_utils.shape_to_np(shape)
-
-        leftEye = shape[lStart:lEnd]
-        rightEye = shape[rStart:rEnd]
-        leftEAR = eye_aspect_ratio(leftEye)
-        rightEAR = eye_aspect_ratio(rightEye)
+            leftEye = shape[lStart:lEnd]
+            rightEye = shape[rStart:rEnd]
+            leftEAR = eye_aspect_ratio(leftEye)
+            rightEAR = eye_aspect_ratio(rightEye)
 
         #(leftEAR + rightEAR) / 2 => both_ear. 
-        both_ear = (leftEAR + rightEAR) * 500  #I multiplied by 1000 to enlarge the scope.
+            both_ear = (leftEAR + rightEAR) * 500  #I multiplied by 1000 to enlarge the scope.
 
-        leftEyeHull = cv2.convexHull(leftEye)
-        rightEyeHull = cv2.convexHull(rightEye)
-        cv2.drawContours(frame, [leftEyeHull], -1, (0,255,0), 1)
-        cv2.drawContours(frame, [rightEyeHull], -1, (0,255,0), 1)
+            leftEyeHull = cv2.convexHull(leftEye)
+            rightEyeHull = cv2.convexHull(rightEye)
+            cv2.drawContours(frame, [leftEyeHull], -1, (0,255,0), 1)
+            cv2.drawContours(frame, [rightEyeHull], -1, (0,255,0), 1)
         
 
-        if both_ear < 210 :
-            now = datetime.datetime.now()
-            dt= now - before
-            if dt.seconds >=3:
-                cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
+            if both_ear < 210 :
+                now = datetime.datetime.now()
+                dt= now - before
+                if dt.seconds >=3:
+                    cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
 
-        else:
-            before = datetime.datetime.now() 
+            else:
+                before = datetime.datetime.now() 
         
 
-        cv2.putText(frame, "EAR : {:.2f}".format(both_ear), (300,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
+            cv2.putText(frame, "EAR : {:.2f}".format(both_ear), (300,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
         
-    cv2.imshow("Frame",frame)
-    key = cv2.waitKey(1) & 0xFF
+        cv2.imshow("Frame",frame)
+        key = cv2.waitKey(1) & 0xFF
 
-    if key == ord("q"):
-        break
+    else:
+        if key == ord("q"):
+            break
 
 cv2.destroyAllWindows()
 vs.stop()
