@@ -95,8 +95,8 @@ prev_time = 0
 #7. 
 print("loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
-#predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-predictor = dlib.shape_predictor("C:\sdkassignment\EyesBlinkTracking\shape_predictor_68_face_landmarks.dat")
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+#predictor = dlib.shape_predictor("C:\sdkassignment\EyesBlinkTracking\shape_predictor_68_face_landmarks.dat")
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
@@ -114,7 +114,8 @@ th_close.deamon = True
 th_close.start()
 before = datetime.datetime.now()
 #########################################################################################
-model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
+model_filename ='keras_model.h5'
+#model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 
 # 케라스 모델 가져오기
 model = tensorflow.keras.models.load_model(model_filename)

@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 
 # 모델 위치
-model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
-
+#model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
+model_filename ='keras_model.h5'
 # 케라스 모델 가져오기
 model = tensorflow.keras.models.load_model(model_filename)
 
