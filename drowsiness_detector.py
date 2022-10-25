@@ -12,7 +12,8 @@ import make_train_data as mtd
 import light_remover as lr
 import datetime
 import tensorflow
-    
+import recorder
+
 
 def eye_aspect_ratio(eye) :
     A = dist.euclidean(eye[1], eye[5])
@@ -206,6 +207,7 @@ while True:
             dt_str = str(dt.seconds)
             before_str = str(before)
             f.write('head: '+dt_str +','+ before_str +'\n')
+            recorder.work(dt)
     cv2.imshow("Frame",frame)
     key = cv2.waitKey(1) & 0xFF
 
