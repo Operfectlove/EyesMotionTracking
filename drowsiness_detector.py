@@ -1,21 +1,18 @@
 import numpy as np
 import imutils
 import time
-import timeit
 import dlib
 import cv2
-import matplotlib.pyplot as plt
 from scipy.spatial import distance as dist
 from imutils.video import VideoStream
 from imutils import face_utils
 from threading import Thread
 from threading import Timer
-from check_cam_fps import check_fps
 import make_train_data as mtd
 import light_remover as lr
 import datetime
-import tensorflow.keras
-
+import tensorflow
+    
 
 def eye_aspect_ratio(eye) :
     A = dist.euclidean(eye[1], eye[5])
@@ -113,6 +110,7 @@ th_close = Thread(target = init_close_ear)
 th_close.deamon = True
 th_close.start()
 before = datetime.datetime.now()
+f = open('t.txt', 'w')
 #########################################################################################
 model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 
@@ -185,19 +183,30 @@ while True:
                 dt= now - before
                 if dt.seconds >=3:
                     cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
-
+                    dt_str = str(dt.seconds)
+                    before_str = str(before)
+                    f.write('eyes: '+dt_str +','+ before_str +'\n')
             else:
                 before = datetime.datetime.now() 
-        
+                
 
             cv2.putText(frame, "EAR : {:.2f}".format(both_ear), (300,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
         
         cv2.imshow("Frame",frame)
         key = cv2.waitKey(1) & 0xFF
 
-    else:
         if key == ord("q"):
             break
+    elif (prediction[0,1] < prediction[0,0]):
+        now = datetime.datetime.now()
+        dt= now - before
+        if dt.seconds >=3:
+            cv2.putText(frame,  "event2", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
+            dt_str = str(dt.seconds)
+            before_str = str(before)
+            f.write('head: '+dt_str +','+ before_str +'\n')
+    cv2.imshow("Frame",frame)
+    key = cv2.waitKey(1) & 0xFF
 
 cv2.destroyAllWindows()
 vs.stop()
