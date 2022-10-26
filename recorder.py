@@ -1,10 +1,13 @@
-import datetime as datetime
+import datetime 
+global before1 = datetime.datetime.now()
 f = open('tf.txt','w')
-def work(t):
-    
-    if t != t2:
-        f.write('etc: '+t+':'+datetime.now())
-        
-
+def work(x):
+    now1 = datetime.datetime.now()
+    ddt= now1 - before1
+    if ddt.seconds >= 5:
+        f.write(x)
+        x =''
+        ddt = datetime.datetime.now()
     else:
-        t2 = t
+        global before1 = datetime.datetime.now()
+

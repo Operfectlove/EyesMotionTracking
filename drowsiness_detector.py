@@ -13,6 +13,9 @@ import light_remover as lr
 import datetime
 import tensorflow
 import recorder
+import time, os
+from multiprocessing import Pool
+
 
 
 def eye_aspect_ratio(eye) :
@@ -93,8 +96,7 @@ prev_time = 0
 #7. 
 print("loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-#predictor = dlib.shape_predictor("C:\sdkassignment\EyesBlinkTracking\shape_predictor_68_face_landmarks.dat")
+predictor = dlib.shape_predictor("C:\sdkassignment\EyesBlinkTracking\shape_predictor_68_face_landmarks.dat")
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
@@ -113,7 +115,7 @@ th_close.start()
 before = datetime.datetime.now()
 f = open('t.txt', 'w')
 #########################################################################################
-model_filename ='keras_model.h5'
+model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 #model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 
 # 케라스 모델 가져오기
@@ -125,6 +127,10 @@ capture = cv2.VideoCapture(0)
 # 카메라 길이 너비 조절
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+
+#병렬
+num_cores = 4
+pool = Pool(num_cores)
 
 # 이미지 처리하기
 def preprocessing(frame):
@@ -185,9 +191,10 @@ while True:
                 dt= now - before
                 if dt.seconds >=3:
                     cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
-                    dt_str = str(dt.seconds)
+                    eyes_dt_str = 'eyes'+ str(dt.seconds)
                     before_str = str(before)
-                    f.write('eyes: '+dt_str +','+ before_str +'\n')
+                    f.write('eyes: '+eyes_dt_str +','+ before_str +'\n')
+                    recorder.work(eyes_dt_str)
             else:
                 before = datetime.datetime.now() 
                 
@@ -204,10 +211,10 @@ while True:
         dt= now - before
         if dt.seconds >=3:
             cv2.putText(frame,  "event2", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
-            dt_str = str(dt.seconds)
+            head_dt_str = 'head' + str(dt.seconds)
             before_str = str(before)
-            f.write('head: '+dt_str +','+ before_str +'\n')
-            recorder.work(dt)
+            f.write('head: '+head_dt_str +','+ before_str +'\n')
+            recorder.work(head_dt_str)
     cv2.imshow("Frame",frame)
     key = cv2.waitKey(1) & 0xFF
 
