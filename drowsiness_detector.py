@@ -1,3 +1,4 @@
+
 import numpy as np
 import imutils
 import time
@@ -7,16 +8,12 @@ from scipy.spatial import distance as dist
 from imutils.video import VideoStream
 from imutils import face_utils
 from threading import Thread
-from threading import Timer
+
 import make_train_data as mtd
 import light_remover as lr
 import datetime
 import tensorflow
-import recorder
-import time, os
-from multiprocessing import Pool
-
-
+register = []
 
 def eye_aspect_ratio(eye) :
     A = dist.euclidean(eye[1], eye[5])
@@ -96,13 +93,14 @@ prev_time = 0
 #7. 
 print("loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
+#predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 predictor = dlib.shape_predictor("C:\sdkassignment\EyesBlinkTracking\shape_predictor_68_face_landmarks.dat")
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
 #8.
 print("starting video stream thread...")
-vs = VideoStream(src=0).start()
+vs = VideoStream(src=0,).start()
 time.sleep(1.0)
 
 #9.
@@ -128,10 +126,6 @@ capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
-#병렬
-num_cores = 4
-pool = Pool(num_cores)
-
 # 이미지 처리하기
 def preprocessing(frame):
     #frame_fliped = cv2.flip(frame, 1)
@@ -155,7 +149,13 @@ def predict(frame):
     return prediction
 #####################################################################################################################
 
-while True:
+def main():
+    global frame
+    global preprocessed
+    global prediction
+    global L, gray
+    global rects
+    global dt, now, before, both_ear, dt_str
     frame = vs.read()
     frame = imutils.resize(frame, width = 400)
     preprocessed = preprocessing(frame)
@@ -163,7 +163,7 @@ while True:
     L, gray = lr.light_removing(frame)
     
     rects = detector(gray,0)
-    
+
     #checking fps. If you want to check fps, just uncomment below two lines.
     #prev_time, fps = check_fps(prev_time)
     #cv2.putText(frame, "fps : {:.2f}".format(fps), (10,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
@@ -191,32 +191,70 @@ while True:
                 dt= now - before
                 if dt.seconds >=3:
                     cv2.putText(frame,  "event", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
-                    eyes_dt_str = 'eyes'+ str(dt.seconds)
+                    dt_str = str(dt.seconds)
                     before_str = str(before)
-                    f.write('eyes: '+eyes_dt_str +','+ before_str +'\n')
-                    recorder.work(eyes_dt_str)
+                    register.append(['eyes', dt_str, before_str])
+                    f.write('eyes: '+ dt_str +','+ before_str +'\n')
+                    return dt_str
             else:
                 before = datetime.datetime.now() 
-                
+                register.append(['0', 0, 0])
 
             cv2.putText(frame, "EAR : {:.2f}".format(both_ear), (300,130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200,30,20), 2)
         
         cv2.imshow("Frame",frame)
         key = cv2.waitKey(1) & 0xFF
 
-        if key == ord("q"):
-            break
+        
     elif (prediction[0,1] < prediction[0,0]):
         now = datetime.datetime.now()
         dt= now - before
         if dt.seconds >=3:
             cv2.putText(frame,  "event2", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
-            head_dt_str = 'head' + str(dt.seconds)
+            dt_str = str(dt.seconds)
             before_str = str(before)
-            f.write('head: '+head_dt_str +','+ before_str +'\n')
-            recorder.work(head_dt_str)
+            register.append(['head', dt_str, before_str])
+            f.write('head: '+dt_str +','+ before_str +'\n')
+            return dt_str
     cv2.imshow("Frame",frame)
     key = cv2.waitKey(1) & 0xFF
 
-cv2.destroyAllWindows()
-vs.stop()
+'''
+def record(x):
+    timeout = 2
+    start_time = time.time()
+    while True:
+        # change and to or. if there is an input or timeout
+        if k != x and ((time.time() - start_time) > timeout):
+            q.write(x)
+        else: 
+            k = x
+'''
+
+
+if __name__ == '__main__':
+    #global q
+    #q = open('tf.txt', 'w')
+        #dt_str = ''
+    while True:
+        main()
+        cv2.imshow("Frame",frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            for i in range(len(register) - 1):
+                a = register[i]
+                log1 = a[1]
+                b = register[i+1]
+                log2 = b[1]
+                
+                if int(log1) > int(log2):
+                    log3 = str(register[i])
+                    f.write(log3)
+                
+                    
+
+            
+            break
+
+    cv2.destroyAllWindows()
+    vs.stop()
