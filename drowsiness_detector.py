@@ -1,4 +1,4 @@
-#이게 아마도 최종일까?
+
 import numpy as np
 import imutils
 import time
@@ -8,11 +8,11 @@ from scipy.spatial import distance as dist
 from imutils.video import VideoStream
 from imutils import face_utils
 from threading import Thread
-
 import make_train_data as mtd
 import light_remover as lr
 import datetime
 import tensorflow
+import pandas as pd
 register = []
 
 def eye_aspect_ratio(eye) :
@@ -47,6 +47,7 @@ def init_close_ear() :
     EAR_THRESH = (((OPEN_EAR - CLOSE_EAR) / 2) + CLOSE_EAR) #EAR_THRESH means 50% of the being opened eyes state
     print("close list =", ear_list, "\nCLOSE_EAR =", CLOSE_EAR, "\n")
     print("The last EAR_THRESH's value :",EAR_THRESH, "\n")
+    
 
 #####################################################################################################################
 #1. Variables for checking EAR.
@@ -111,7 +112,7 @@ th_close = Thread(target = init_close_ear)
 th_close.deamon = True
 th_close.start()
 before = datetime.datetime.now()
-f = open('t.txt', 'w')
+#f = open('t.txt', 'w')
 #########################################################################################
 model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 #model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
@@ -194,7 +195,7 @@ def main():
                     dt_str = str(dt.seconds)
                     before_str = str(before)
                     register.append(['eyes', dt_str, before_str])
-                    f.write('eyes: '+ dt_str +','+ before_str +'\n')
+                    #f.write('eyes: '+ dt_str +','+ before_str +'\n')
                     return dt_str
             else:
                 before = datetime.datetime.now() 
@@ -214,7 +215,7 @@ def main():
             dt_str = str(dt.seconds)
             before_str = str(before)
             register.append(['head', dt_str, before_str])
-            f.write('head: '+dt_str +','+ before_str +'\n')
+            #f.write('head: '+dt_str +','+ before_str +'\n')
             return dt_str
     cv2.imshow("Frame",frame)
     key = cv2.waitKey(1) & 0xFF
@@ -240,7 +241,14 @@ if __name__ == '__main__':
         main()
         cv2.imshow("Frame",frame)
         key = cv2.waitKey(1) & 0xFF
+        #register에 저장해놓은 위치, 감지시간, 당시 시각 중 감지시간을 비교하여 
+        #t.txt라는 파일에 순서대로 기록
+        #감지시간과 다음감지시간을 비교하여 더 클 경우에만 기록
         if key == ord("q"):
+            
+            c = []
+            d = []
+            e = []
             for i in range(len(register) - 1):
                 a = register[i]
                 log1 = a[1]
@@ -249,11 +257,18 @@ if __name__ == '__main__':
                 
                 if int(log1) > int(log2):
                     log3 = str(register[i])
-                    f.write(log3)
+                    #f.write(log3)
+                    c.append(a[0])
+                    d.append(a[1])
+                    e.append(a[2])
+                    
                 
                     
-
-            
+            df = pd.DataFrame(c, columns = ['type'])
+            df['time'] = e
+            df['duration'] = d
+            print(c,d,e)
+            df.to_csv("log.csv", index = False)
             break
 
     cv2.destroyAllWindows()
