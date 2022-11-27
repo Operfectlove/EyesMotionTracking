@@ -210,7 +210,7 @@ def main():
     elif (prediction[0,1] < prediction[0,0]):
         now = datetime.datetime.now()
         dt= now - before
-        if dt.seconds >=3:
+        if dt.seconds >=15:
             cv2.putText(frame,  "event2", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
             dt_str = str(dt.seconds)
             before_str = str(before)
