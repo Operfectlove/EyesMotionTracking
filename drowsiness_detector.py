@@ -114,7 +114,7 @@ th_close.start()
 before = datetime.datetime.now()
 #f = open('t.txt', 'w')
 #########################################################################################
-model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
+model_filename ='C:\sdkassignment\EyesMotionTracking\keras_model.h5'
 #model_filename ='C:\sdkassignment\EyesBlinkTracking\keras_model.h5'
 
 # 케라스 모델 가져오기
@@ -210,7 +210,7 @@ def main():
     elif (prediction[0,1] < prediction[0,0]):
         now = datetime.datetime.now()
         dt= now - before
-        if dt.seconds >=15:
+        if dt.seconds >=60:
             cv2.putText(frame,  "event2", (250,120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1, cv2.LINE_AA)
             dt_str = str(dt.seconds)
             before_str = str(before)
